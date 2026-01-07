@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mouse Skills Trainer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        :root {
+            --aolcc-orange: #E87722;
+            --aolcc-turquoise: #72D1C9;
+            --aolcc-green: #00A651;
+            --aolcc-orange-light: #FFF3E8;
+            --aolcc-turquoise-light: #E5F7F5;
+            --aolcc-green-light: #E6F5EC;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--aolcc-turquoise) 0%, #4BA8A0 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 32px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--aolcc-orange);
+            margin-bottom: 8px;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 24px;
+            font-size: 1rem;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: var(--aolcc-turquoise-light);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .stat {
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--aolcc-green);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Skill Selection */
+        .skill-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .skill-tab {
+            flex: 0 1 auto;
+            min-width: 100px;
+            padding: 12px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .skill-tab:hover {
+            border-color: var(--aolcc-turquoise);
+            background: var(--aolcc-turquoise-light);
+        }
+
+        .skill-tab.active {
+            border-color: var(--aolcc-green);
+            background: var(--aolcc-green);
+            color: white;
+        }
+
+        .skill-tab .icon {
+            font-size: 1.5rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* Instructions */
+        .instructions {
+            background: var(--aolcc-orange-light);
+            border-left: 4px solid var(--aolcc-orange);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        .instructions strong {
+            color: var(--aolcc-orange);
+        }
+
+        /* Practice Area */
+        .practice-area {
+            background: #fafafa;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        .practice-area.drag-mode {
+            cursor: default;
+        }
+
+        /* Targets */
+        .target {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+            cursor: pointer;
+        }
+
+        .target:hover {
+            transform: scale(1.05);
+        }
+
+        .target.click {
+            background: linear-gradient(135deg, var(--aolcc-green), #008544);
+            box-shadow: 0 4px 15px rgba(0, 166, 81, 0.4);
+        }
+
+        .target.right-click {
+            background: linear-gradient(135deg, var(--aolcc-turquoise), #4BA8A0);
+            box-shadow: 0 4px 15px rgba(114, 209, 201, 0.4);
+        }
+
+        .target.double-click {
+            background: linear-gradient(135deg, var(--aolcc-orange), #D06A1F);
+            box-shadow: 0 4px 15px rgba(232, 119, 34, 0.4);
+        }
+
+        .target.success {
+            animation: success-pop 0.3s ease-out forwards;
+        }
+
+        @keyframes success-pop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        .target.error {
+            animation: error-shake 0.3s ease-out;
+        }
+
+        @keyframes error-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); background: #f44336; }
+            75% { transform: translateX(10px); background: #f44336; }
+        }
+
+        /* Drag Elements */
+        .drag-item {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--aolcc-orange), #D06A1F);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            cursor: grab;
+            box-shadow: 0 4px 15px rgba(232, 119, 34, 0.4);
+            transition: box-shadow 0.2s;
+            z-index: 10;
+        }
+
+        .drag-item:active {
+            cursor: grabbing;
+            box-shadow: 0 8px 25px rgba(232, 119, 34, 0.6);
+        }
+
+        .drag-item.dragging {
+            opacity: 0.8;
+            z-index: 100;
+        }
+
+        .drop-zone {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 4px dashed var(--aolcc-orange);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--aolcc-orange);
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: var(--aolcc-orange-light);
+        }
+
+        .drop-zone.hover {
+            background: rgba(232, 119, 34, 0.3);
+            border-style: solid;
+        }
+
+        .drop-zone.success {
+            background: var(--aolcc-green-light);
+            border-color: var(--aolcc-green);
+            color: var(--aolcc-green);
+        }
+
+        /* Scroll Practice */
+        .scroll-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 360px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .scroll-target {
+            background: var(--aolcc-green);
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .scroll-filler {
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Hover targets */
+        .hover-target {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, var(--aolcc-turquoise), #4BA8A0);
+            box-shadow: 0 4px 15px rgba(114, 209, 201, 0.4);
+            transition: transform 0.2s, background 0.3s;
+            cursor: pointer;
+        }
+
+        .hover-target.hovered {
+            background: linear-gradient(135deg, var(--aolcc-green), #008544);
+            transform: scale(1.1);
+        }
+
+        .hover-target.success {
+            animation: success-pop 0.3s ease-out forwards;
+        }
+
+        .hover-progress {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .hover-progress-fill {
+            height: 100%;
+            background: var(--aolcc-green);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        /* Text selection area */
+        .text-select-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 30px;
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .text-select-container h3 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+
+        .selectable-text {
+            font-size: 1.4rem;
+            line-height: 1.8;
+            color: #333;
+            padding: 16px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            cursor: text;
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+
+        .selectable-text .target-word {
+            background: var(--aolcc-orange-light);
+            padding: 2px 4px;
+            border-radius: 4px;
+            border: 2px dashed var(--aolcc-orange);
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .selectable-text .target-word.selected {
+            background: var(--aolcc-green-light);
+            border-color: var(--aolcc-green);
+            border-style: solid;
+        }
+
+        .select-hint {
+            margin-top: 16px;
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        /* Feedback Messages - Now above practice area */
+        .feedback-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 50px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            transition: all 0.2s;
+            background: #f5f5f5;
+            color: #999;
+        }
+
+        .feedback-bar.success {
+            background: var(--aolcc-green-light);
+            color: var(--aolcc-green);
+        }
+
+        .feedback-bar.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .feedback-bar .points {
+            margin-left: 8px;
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        /* Session Stats */
+        .session-stats {
+            background: #f1f8e9;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #555;
+            text-align: center;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--aolcc-green);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #008544;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-orange {
+            background: var(--aolcc-orange);
+            color: white;
+        }
+
+        .btn-orange:hover {
+            background: #D06A1F;
+        }
+
+        .btn-large {
+            padding: 18px 48px;
+            font-size: 1.3rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        /* Progress indicator */
+        .level-indicator {
+            text-align: center;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .level-indicator strong {
+            color: var(--aolcc-green);
+        }
+
+        /* Session Progress Bar */
+        .session-progress {
+            margin-top: 16px;
+            padding: 16px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .session-progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .session-progress-bar {
+            height: 12px;
+            background: #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .session-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--aolcc-turquoise), var(--aolcc-green));
+            border-radius: 6px;
+            transition: width 0.3s;
+        }
+
+        /* Start Screen Overlay */
+        .start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .start-screen h2 {
+            color: var(--aolcc-green);
+            margin-bottom: 16px;
+            font-size: 1.6rem;
+        }
+
+        .start-screen p {
+            color: #666;
+            margin-bottom: 24px;
+            max-width: 400px;
+            line-height: 1.6;
+        }
+
+        .start-screen.hidden {
+            display: none;
+        }
+
+        /* Pause Overlay */
+        .pause-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            z-index: 100;
+        }
+
+        .pause-overlay h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .pause-overlay.hidden {
+            display: none;
+        }
+
+        /* Completion Screen */
+        .completion-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            border-radius: 12px;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .completion-screen .trophy {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            margin-top: 10px;
+        }
+
+        .completion-screen h2 {
+            color: var(--aolcc-green);
+            margin-bottom: 8px;
+            font-size: 1.5rem;
+        }
+
+        .completion-screen p {
+            color: #666;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .completion-screen .final-stats {
+            background: var(--aolcc-turquoise-light);
+            border-radius: 12px;
+            padding: 16px 30px;
+            margin: 12px 0;
+        }
+
+        .completion-screen .final-stats .stat-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            margin: 6px 0;
+            font-size: 1rem;
+        }
+
+        .completion-screen .final-stats .stat-row .label {
+            color: #666;
+        }
+
+        .completion-screen .final-stats .stat-row .value {
+            color: var(--aolcc-green);
+            font-weight: bold;
+        }
+
+        .completion-screen .btn {
+            margin-top: 12px;
+            margin-bottom: 20px;
+        }
+
+        .completion-screen.hidden {
+            display: none;
+        }
+
+        /* Right-click context menu prevention message */
+        .context-hint {
+            position: absolute;
+            background: var(--aolcc-turquoise);
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 100;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.4rem;
+            }
+
+            .practice-area {
+                height: 300px;
+            }
+
+            .skill-tab {
+                min-width: 80px;
+                padding: 10px;
+                font-size: 0.8rem;
+            }
+
+            .skill-tab .icon {
+                font-size: 1.2rem;
+            }
+
+            .stat-value {
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖱️ Mouse Skills Trainer</h1>
+        <p class="subtitle">Master essential mouse skills at your own pace</p>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-value" id="score">0</div>
+                <div class="stat-label">Score</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="streak">0</div>
+                <div class="stat-label">Streak</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="accuracy">100%</div>
+                <div class="stat-label">Accuracy</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="completed">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+        </div>
+
+        <div class="skill-tabs">
+            <div class="skill-tab active" data-skill="click">
+                <span class="icon">👆</span>
+                Click
+            </div>
+            <div class="skill-tab" data-skill="double-click">
+                <span class="icon">👆👆</span>
+                Double-Click
+            </div>
+            <div class="skill-tab" data-skill="right-click">
+                <span class="icon">🖱️</span>
+                Right-Click
+            </div>
+            <div class="skill-tab" data-skill="hover">
+                <span class="icon">🎯</span>
+                Hover
+            </div>
+            <div class="skill-tab" data-skill="drag">
+                <span class="icon">✋</span>
+                Drag & Drop
+            </div>
+            <div class="skill-tab" data-skill="select">
+                <span class="icon">📝</span>
+                Select Text
+            </div>
+            <div class="skill-tab" data-skill="scroll">
+                <span class="icon">📜</span>
+                Scroll
+            </div>
+        </div>
+
+        <div class="instructions" id="instructions">
+            <strong>Click Practice:</strong> Click on the green circles as they appear. Try to click as many as you can!
+        </div>
+
+        <div class="level-indicator">
+            Level: <strong id="levelDisplay">1</strong> | Target Size: <strong id="sizeDisplay">Large</strong>
+        </div>
+
+        <div class="feedback-bar" id="feedbackBar">
+            Ready to practice!
+        </div>
+
+        <div class="practice-area" id="practiceArea">
+            <!-- Start Screen -->
+            <div class="start-screen" id="startScreen">
+                <h2>🖱️ Ready to Practice?</h2>
+                <p>Practice your mouse skills at your own pace. You can pause anytime by clicking the Pause button.</p>
+                <button class="btn btn-orange btn-large" id="startExerciseBtn">▶️ Start Exercise</button>
+            </div>
+            
+            <!-- Pause Overlay -->
+            <div class="pause-overlay hidden" id="pauseOverlay">
+                <h2>⏸️ Paused</h2>
+                <button class="btn btn-orange btn-large" id="resumeBtn">▶️ Resume</button>
+            </div>
+
+            <!-- Completion Screen -->
+            <div class="completion-screen hidden" id="completionScreen">
+                <div class="trophy">🏆</div>
+                <h2>Session Complete!</h2>
+                <p>Great work! You've completed your practice session.</p>
+                <div class="final-stats">
+                    <div class="stat-row">
+                        <span class="label">Exercises Completed:</span>
+                        <span class="value" id="finalCompleted">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="label">Final Score:</span>
+                        <span class="value" id="finalScore">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="label">Best Streak:</span>
+                        <span class="value" id="finalStreak">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="label">Accuracy:</span>
+                        <span class="value" id="finalAccuracy">100%</span>
+                    </div>
+                </div>
+                <button class="btn btn-orange btn-large" id="restartBtn">🔄 Start New Session</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-orange" id="pauseBtn" disabled>⏸️ Pause</button>
+            <button class="btn btn-primary" id="resetBtn">🔄 Reset</button>
+        </div>
+
+        <div class="session-progress">
+            <div class="session-progress-label">
+                <span>Session Progress</span>
+                <span><span id="progressCount">0</span> / <span id="progressGoal">20</span> exercises</span>
+            </div>
+            <div class="session-progress-bar">
+                <div class="session-progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="session-stats">
+            Best Streak: <span id="bestStreak">0</span> |
+            <span id="skillProgress"></span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        
+        const CONFIG = {
+            // Target sizes decrease as level increases
+            targetSizes: {
+                1: 80,   // Large - very easy
+                2: 70,
+                3: 60,   // Medium
+                4: 50,
+                5: 40    // Small - challenging
+            },
+            levelUpThreshold: 10, // Successful clicks to level up
+            levelDownThreshold: 5, // Consecutive misses to level down
+            targetDuration: {
+                click: 4000,        // Time before target disappears (ms)
+                'double-click': 5000,
+                'right-click': 5000
+            }
+        };
+
+        // ============================================
+        // STATE
+        // ============================================
+
+        let state = {
+            currentSkill: 'click',
+            score: 0,
+            streak: 0,
+            bestStreak: 0,
+            attempts: 0,
+            successes: 0,
+            completed: 0,
+            level: 1,
+            consecutiveMisses: 0,
+            
+            // Exercise state
+            isStarted: false,
+            isPaused: false,
+            sessionGoal: 20,
+            
+            // Drag state
+            isDragging: false,
+            dragElement: null,
+            dragOffsetX: 0,
+            dragOffsetY: 0,
+            
+            // Scroll state
+            scrollTarget: null,
+            
+            // Active targets
+            activeTargets: [],
+            targetTimeout: null,
+            
+            // Skill-specific stats
+            skillStats: {
+                click: { attempts: 0, successes: 0 },
+                'double-click': { attempts: 0, successes: 0 },
+                'right-click': { attempts: 0, successes: 0 },
+                hover: { attempts: 0, successes: 0 },
+                drag: { attempts: 0, successes: 0 },
+                select: { attempts: 0, successes: 0 },
+                scroll: { attempts: 0, successes: 0 }
+            },
+            
+            // Hover state
+            hoverTimer: null,
+            hoverProgress: 0
+        };
+
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+
+        const elements = {
+            practiceArea: document.getElementById('practiceArea'),
+            instructions: document.getElementById('instructions'),
+            feedbackBar: document.getElementById('feedbackBar'),
+            score: document.getElementById('score'),
+            streak: document.getElementById('streak'),
+            accuracy: document.getElementById('accuracy'),
+            completed: document.getElementById('completed'),
+            levelDisplay: document.getElementById('levelDisplay'),
+            sizeDisplay: document.getElementById('sizeDisplay'),
+            bestStreak: document.getElementById('bestStreak'),
+            skillProgress: document.getElementById('skillProgress'),
+            resetBtn: document.getElementById('resetBtn'),
+            skillTabs: document.querySelectorAll('.skill-tab'),
+            
+            // New elements
+            startScreen: document.getElementById('startScreen'),
+            startExerciseBtn: document.getElementById('startExerciseBtn'),
+            pauseOverlay: document.getElementById('pauseOverlay'),
+            pauseBtn: document.getElementById('pauseBtn'),
+            resumeBtn: document.getElementById('resumeBtn'),
+            progressCount: document.getElementById('progressCount'),
+            progressGoal: document.getElementById('progressGoal'),
+            progressFill: document.getElementById('progressFill'),
+            
+            // Completion screen
+            completionScreen: document.getElementById('completionScreen'),
+            restartBtn: document.getElementById('restartBtn'),
+            finalCompleted: document.getElementById('finalCompleted'),
+            finalScore: document.getElementById('finalScore'),
+            finalStreak: document.getElementById('finalStreak'),
+            finalAccuracy: document.getElementById('finalAccuracy')
+        };
+
+        // ============================================
+        // INSTRUCTIONS
+        // ============================================
+
+        const instructions = {
+            click: '<strong>Click Practice:</strong> Click on the green circles as they appear. Click accurately and quickly to build your streak!',
+            'double-click': '<strong>Double-Click Practice:</strong> Double-click on the orange circles. Make sure to click twice quickly!',
+            'right-click': '<strong>Right-Click Practice:</strong> Right-click on the blue circles. Use the secondary mouse button (usually the right side).',
+            hover: '<strong>Hover Practice:</strong> Move your mouse over the target and hold it there until the progress bar fills. Don\'t click—just hover!',
+            drag: '<strong>Drag & Drop Practice:</strong> Click and hold on the purple square, drag it to the dotted drop zone, then release.',
+            select: '<strong>Text Selection Practice:</strong> Click at the start of the highlighted word, hold the mouse button, drag to the end of the word, then release.',
+            scroll: '<strong>Scroll Practice:</strong> Use your mouse wheel or touchpad to scroll down and find the green target box. Scroll back up to find the next one!'
+        };
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function getRandomPosition(size) {
+            const area = elements.practiceArea.getBoundingClientRect();
+            const padding = 20;
+            const maxX = area.width - size - padding;
+            const maxY = area.height - size - padding;
+            
+            return {
+                x: Math.max(padding, Math.random() * maxX),
+                y: Math.max(padding, Math.random() * maxY)
+            };
+        }
+
+        function showFeedback(message, type) {
+            elements.feedbackBar.textContent = message;
+            elements.feedbackBar.className = 'feedback-bar ' + type;
+            
+            // Reset to neutral after delay
+            setTimeout(() => {
+                elements.feedbackBar.className = 'feedback-bar';
+                elements.feedbackBar.textContent = 'Keep going!';
+            }, 1500);
+        }
+
+        function updateStats() {
+            elements.score.textContent = state.score;
+            elements.streak.textContent = state.streak;
+            elements.completed.textContent = state.completed;
+            elements.bestStreak.textContent = state.bestStreak;
+            
+            const accuracy = state.attempts > 0 
+                ? Math.round((state.successes / state.attempts) * 100) 
+                : 100;
+            elements.accuracy.textContent = accuracy + '%';
+            
+            // Update level display
+            elements.levelDisplay.textContent = state.level;
+            const sizeNames = { 1: 'Extra Large', 2: 'Large', 3: 'Medium', 4: 'Small', 5: 'Extra Small' };
+            elements.sizeDisplay.textContent = sizeNames[state.level] || 'Medium';
+            
+            // Update skill progress
+            const skillStat = state.skillStats[state.currentSkill];
+            const skillAcc = skillStat.attempts > 0 
+                ? Math.round((skillStat.successes / skillStat.attempts) * 100) 
+                : 100;
+            elements.skillProgress.textContent = `${state.currentSkill} accuracy: ${skillAcc}%`;
+            
+            // Update session progress bar
+            elements.progressCount.textContent = state.completed;
+            elements.progressGoal.textContent = state.sessionGoal;
+            const progressPercent = Math.min((state.completed / state.sessionGoal) * 100, 100);
+            elements.progressFill.style.width = progressPercent + '%';
+        }
+
+        function handleSuccess() {
+            state.score += state.level * 10;
+            state.streak++;
+            state.successes++;
+            state.completed++;
+            state.consecutiveMisses = 0;
+            state.skillStats[state.currentSkill].successes++;
+            
+            if (state.streak > state.bestStreak) {
+                state.bestStreak = state.streak;
+            }
+            
+            // Check if session is complete
+            if (state.completed >= state.sessionGoal) {
+                showCompletionScreen();
+                return;
+            }
+            
+            // Level up after threshold
+            if (state.streak > 0 && state.streak % CONFIG.levelUpThreshold === 0 && state.level < 5) {
+                state.level++;
+                showFeedback('Level Up! 🎉', 'success');
+            } else {
+                showFeedback('Great! +' + (state.level * 10), 'success');
+            }
+            
+            updateStats();
+        }
+
+        function showCompletionScreen() {
+            // Stop everything
+            state.isStarted = false;
+            state.isPaused = true; // Prevent any new exercises
+            
+            // Clear all targets and timeouts
+            clearTimeout(state.targetTimeout);
+            state.targetTimeout = null;
+            clearTargets();
+            
+            // Update final stats
+            elements.finalCompleted.textContent = state.completed;
+            elements.finalScore.textContent = state.score;
+            elements.finalStreak.textContent = state.bestStreak;
+            
+            const accuracy = state.attempts > 0 
+                ? Math.round((state.successes / state.attempts) * 100) 
+                : 100;
+            elements.finalAccuracy.textContent = accuracy + '%';
+            
+            // Show completion screen
+            elements.completionScreen.classList.remove('hidden');
+            elements.pauseBtn.disabled = true;
+            elements.feedbackBar.textContent = '🎉 Session Complete!';
+            elements.feedbackBar.className = 'feedback-bar success';
+            
+            updateStats();
+        }
+
+        function restartSession() {
+            // Reset all state
+            state.score = 0;
+            state.streak = 0;
+            state.bestStreak = 0;
+            state.attempts = 0;
+            state.successes = 0;
+            state.completed = 0;
+            state.level = 1;
+            state.consecutiveMisses = 0;
+            state.isStarted = false;
+            state.isPaused = false;
+            
+            // Reset skill stats
+            Object.keys(state.skillStats).forEach(skill => {
+                state.skillStats[skill] = { attempts: 0, successes: 0 };
+            });
+            
+            // Hide completion, show start
+            elements.completionScreen.classList.add('hidden');
+            elements.startScreen.classList.remove('hidden');
+            elements.pauseBtn.disabled = true;
+            elements.feedbackBar.textContent = 'Ready to practice!';
+            elements.feedbackBar.className = 'feedback-bar';
+            
+            updateStats();
+        }
+
+        function handleMiss() {
+            // Don't process if session complete
+            if (state.completed >= state.sessionGoal || !state.isStarted) return;
+            
+            state.streak = 0;
+            state.consecutiveMisses++;
+            state.skillStats[state.currentSkill].attempts++;
+            state.attempts++;
+            
+            // Level down after too many misses
+            if (state.consecutiveMisses >= CONFIG.levelDownThreshold && state.level > 1) {
+                state.level--;
+                state.consecutiveMisses = 0;
+                showFeedback('Level adjusted', 'error');
+            } else {
+                showFeedback('Missed!', 'error');
+            }
+            
+            updateStats();
+        }
+
+        // ============================================
+        // CLICK PRACTICE
+        // ============================================
+
+        function createClickTarget() {
+            // Don't create if session complete or paused
+            if (state.completed >= state.sessionGoal || state.isPaused || !state.isStarted) return;
+            
+            clearTargets();
+            
+            const size = CONFIG.targetSizes[state.level];
+            const pos = getRandomPosition(size);
+            
+            const target = document.createElement('div');
+            target.className = 'target click';
+            target.style.width = size + 'px';
+            target.style.height = size + 'px';
+            target.style.left = pos.x + 'px';
+            target.style.top = pos.y + 'px';
+            target.textContent = '👆';
+            target.style.fontSize = (size * 0.4) + 'px';
+            
+            target.addEventListener('click', (e) => {
+                e.stopPropagation();
+                state.attempts++;
+                state.skillStats['click'].attempts++;
+                target.classList.add('success');
+                handleSuccess();
+                setTimeout(createClickTarget, 300);
+            });
+            
+            elements.practiceArea.appendChild(target);
+            state.activeTargets.push(target);
+            
+            // Auto-remove after timeout
+            state.targetTimeout = setTimeout(() => {
+                if (target.parentElement) {
+                    target.remove();
+                    handleMiss();
+                    createClickTarget();
+                }
+            }, CONFIG.targetDuration.click);
+        }
+
+        // ============================================
+        // DOUBLE-CLICK PRACTICE
+        // ============================================
+
+        function createDoubleClickTarget() {
+            // Don't create if session complete or paused
+            if (state.completed >= state.sessionGoal || state.isPaused || !state.isStarted) return;
+            
+            clearTargets();
+            
+            const size = CONFIG.targetSizes[state.level];
+            const pos = getRandomPosition(size);
+            
+            const target = document.createElement('div');
+            target.className = 'target double-click';
+            target.style.width = size + 'px';
+            target.style.height = size + 'px';
+            target.style.left = pos.x + 'px';
+            target.style.top = pos.y + 'px';
+            target.textContent = '2×';
+            target.style.fontSize = (size * 0.35) + 'px';
+            
+            target.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                state.attempts++;
+                state.skillStats['double-click'].attempts++;
+                target.classList.add('success');
+                handleSuccess();
+                setTimeout(createDoubleClickTarget, 300);
+            });
+            
+            // Single click shows hint
+            target.addEventListener('click', (e) => {
+                e.stopPropagation();
+                target.classList.add('error');
+                setTimeout(() => target.classList.remove('error'), 300);
+            });
+            
+            elements.practiceArea.appendChild(target);
+            state.activeTargets.push(target);
+            
+            state.targetTimeout = setTimeout(() => {
+                if (target.parentElement) {
+                    target.remove();
+                    handleMiss();
+                    createDoubleClickTarget();
+                }
+            }, CONFIG.targetDuration['double-click']);
+        }
+
+        // ============================================
+        // RIGHT-CLICK PRACTICE
+        // ============================================
+
+        function createRightClickTarget() {
+            // Don't create if session complete or paused
+            if (state.completed >= state.sessionGoal || state.isPaused || !state.isStarted) return;
+            
+            clearTargets();
+            
+            const size = CONFIG.targetSizes[state.level];
+            const pos = getRandomPosition(size);
+            
+            const target = document.createElement('div');
+            target.className = 'target right-click';
+            target.style.width = size + 'px';
+            target.style.height = size + 'px';
+            target.style.left = pos.x + 'px';
+            target.style.top = pos.y + 'px';
+            target.textContent = 'R';
+            target.style.fontSize = (size * 0.4) + 'px';
+            
+            target.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                state.attempts++;
+                state.skillStats['right-click'].attempts++;
+                target.classList.add('success');
+                handleSuccess();
+                setTimeout(createRightClickTarget, 300);
+            });
+            
+            // Left click shows hint
+            target.addEventListener('click', (e) => {
+                e.stopPropagation();
+                target.classList.add('error');
+                showFeedback('Use RIGHT click!', 'error');
+                setTimeout(() => target.classList.remove('error'), 300);
+            });
+            
+            elements.practiceArea.appendChild(target);
+            state.activeTargets.push(target);
+            
+            state.targetTimeout = setTimeout(() => {
+                if (target.parentElement) {
+                    target.remove();
+                    handleMiss();
+                    createRightClickTarget();
+                }
+            }, CONFIG.targetDuration['right-click']);
+        }
+
+        // ============================================
+        // DRAG & DROP PRACTICE
+        // ============================================
+
+        function createDragExercise() {
+            // Don't create if session complete or paused
+            if (state.completed >= state.sessionGoal || state.isPaused || !state.isStarted) return;
+            
+            clearTargets();
+            elements.practiceArea.classList.add('drag-mode');
+            
+            const areaRect = elements.practiceArea.getBoundingClientRect();
+            
+            // Create drop zone (right side)
+            const dropZone = document.createElement('div');
+            dropZone.className = 'drop-zone';
+            dropZone.id = 'dropZone';
+            dropZone.style.right = '40px';
+            dropZone.style.top = (areaRect.height / 2 - 50) + 'px';
+            dropZone.textContent = 'Drop Here';
+            elements.practiceArea.appendChild(dropZone);
+            
+            // Create drag item (left side)
+            const dragItem = document.createElement('div');
+            dragItem.className = 'drag-item';
+            dragItem.id = 'dragItem';
+            dragItem.style.left = '40px';
+            dragItem.style.top = (areaRect.height / 2 - 40) + 'px';
+            dragItem.textContent = '📦';
+            
+            dragItem.addEventListener('mousedown', startDrag);
+            
+            elements.practiceArea.appendChild(dragItem);
+            state.activeTargets.push(dropZone, dragItem);
+        }
+
+        function startDrag(e) {
+            e.preventDefault();
+            const dragItem = document.getElementById('dragItem');
+            if (!dragItem) return;
+            
+            state.isDragging = true;
+            state.dragElement = dragItem;
+            
+            const rect = dragItem.getBoundingClientRect();
+            const areaRect = elements.practiceArea.getBoundingClientRect();
+            
+            state.dragOffsetX = e.clientX - rect.left;
+            state.dragOffsetY = e.clientY - rect.top;
+            
+            dragItem.classList.add('dragging');
+            
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', endDrag);
+        }
+
+        function onDrag(e) {
+            if (!state.isDragging || !state.dragElement) return;
+            
+            const areaRect = elements.practiceArea.getBoundingClientRect();
+            let x = e.clientX - areaRect.left - state.dragOffsetX;
+            let y = e.clientY - areaRect.top - state.dragOffsetY;
+            
+            // Keep within bounds
+            x = Math.max(0, Math.min(x, areaRect.width - 80));
+            y = Math.max(0, Math.min(y, areaRect.height - 80));
+            
+            state.dragElement.style.left = x + 'px';
+            state.dragElement.style.top = y + 'px';
+            
+            // Check hover over drop zone
+            const dropZone = document.getElementById('dropZone');
+            if (dropZone) {
+                const dropRect = dropZone.getBoundingClientRect();
+                const dragRect = state.dragElement.getBoundingClientRect();
+                
+                if (isOverlapping(dragRect, dropRect)) {
+                    dropZone.classList.add('hover');
+                } else {
+                    dropZone.classList.remove('hover');
+                }
+            }
+        }
+
+        function endDrag(e) {
+            if (!state.isDragging) return;
+            
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', endDrag);
+            
+            const dragItem = state.dragElement;
+            const dropZone = document.getElementById('dropZone');
+            
+            if (dragItem && dropZone) {
+                const dropRect = dropZone.getBoundingClientRect();
+                const dragRect = dragItem.getBoundingClientRect();
+                
+                state.attempts++;
+                state.skillStats['drag'].attempts++;
+                
+                if (isOverlapping(dragRect, dropRect)) {
+                    dropZone.classList.add('success');
+                    dragItem.style.display = 'none';
+                    handleSuccess();
+                    setTimeout(createDragExercise, 800);
+                } else {
+                    // Reset position
+                    const areaRect = elements.practiceArea.getBoundingClientRect();
+                    dragItem.style.left = '40px';
+                    dragItem.style.top = (areaRect.height / 2 - 40) + 'px';
+                    showFeedback('Drop it in the zone!', 'error');
+                }
+            }
+            
+            if (dragItem) {
+                dragItem.classList.remove('dragging');
+            }
+            
+            state.isDragging = false;
+            state.dragElement = null;
+        }
+
+        function isOverlapping(rect1, rect2) {
+            return !(rect1.right < rect2.left || 
+                     rect1.left > rect2.right || 
+                     rect1.bottom < rect2.top || 
+                     rect1.top > rect2.bottom);
+        }
+
+        // ============================================
+        // SCROLL PRACTICE
+        // ============================================
+
+        function createScrollExercise() {
+            // Don't create if session complete or paused
+            if (state.completed >= state.sessionGoal || state.isPaused || !state.isStarted) return;
+            
+            clearTargets();
+            
+            const scrollContainer = document.createElement('div');
+            scrollContainer.className = 'scroll-container';
+            scrollContainer.id = 'scrollContainer';
+            
+            // Add filler content
+            for (let i = 0; i < 3; i++) {
+                const filler = document.createElement('div');
+                filler.className = 'scroll-filler';
+                filler.textContent = '↓ Scroll down ↓';
+                scrollContainer.appendChild(filler);
+            }
+            
+            // Add target
+            const target = document.createElement('div');
+            target.className = 'scroll-target';
+            target.id = 'scrollTarget';
+            target.textContent = '🎯 You found it! Click here!';
+            
+            target.addEventListener('click', () => {
+                state.attempts++;
+                state.skillStats['scroll'].attempts++;
+                handleSuccess();
+                setTimeout(createScrollExercise, 500);
+            });
+            
+            scrollContainer.appendChild(target);
+            
+            // More filler after
+            for (let i = 0; i < 2; i++) {
+                const filler = document.createElement('div');
+                filler.className = 'scroll-filler';
+                filler.textContent = '↑ Scroll up for next ↑';
+                scrollContainer.appendChild(filler);
+            }
+            
+            elements.practiceArea.appendChild(scrollContainer);
+            state.activeTargets.push(scrollContainer);
+            
+            // Reset scroll position
+            scrollContainer.scrollTop = 0;
+        }
+
+        // ============================================
+        // HOVER PRACTICE
+        // ============================================
+
+        function createHoverTarget() {
+            // Don't create if session complete or paused
+            if (state.completed >= state.sessionGoal || state.isPaused || !state.isStarted) return;
+            
+            clearTargets();
+            
+            const size = CONFIG.targetSizes[state.level];
+            const pos = getRandomPosition(size);
+            
+            const target = document.createElement('div');
+            target.className = 'hover-target';
+            target.style.width = size + 'px';
+            target.style.height = size + 'px';
+            target.style.left = pos.x + 'px';
+            target.style.top = pos.y + 'px';
+            target.innerHTML = '🎯<div class="hover-progress"><div class="hover-progress-fill" id="hoverFill"></div></div>';
+            target.style.fontSize = (size * 0.35) + 'px';
+            
+            let hoverProgress = 0;
+            let hoverInterval = null;
+            const hoverDuration = 1500; // ms to complete hover
+            const updateInterval = 50; // ms between updates
+            
+            target.addEventListener('mouseenter', () => {
+                target.classList.add('hovered');
+                state.attempts++;
+                state.skillStats['hover'].attempts++;
+                
+                hoverInterval = setInterval(() => {
+                    hoverProgress += (updateInterval / hoverDuration) * 100;
+                    const fill = document.getElementById('hoverFill');
+                    if (fill) fill.style.width = hoverProgress + '%';
+                    
+                    if (hoverProgress >= 100) {
+                        clearInterval(hoverInterval);
+                        target.classList.add('success');
+                        handleSuccess();
+                        setTimeout(createHoverTarget, 300);
+                    }
+                }, updateInterval);
+            });
+            
+            target.addEventListener('mouseleave', () => {
+                target.classList.remove('hovered');
+                clearInterval(hoverInterval);
+                hoverProgress = 0;
+                const fill = document.getElementById('hoverFill');
+                if (fill) fill.style.width = '0%';
+            });
+            
+            // Clicking is wrong for this exercise
+            target.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showFeedback('Don\'t click—just hover!', 'error');
+            });
+            
+            elements.practiceArea.appendChild(target);
+            state.activeTargets.push(target);
+            
+            // Timeout if not hovered
+            state.targetTimeout = setTimeout(() => {
+                if (target.parentElement && !target.classList.contains('success')) {
+                    target.remove();
+                    handleMiss();
+                    createHoverTarget();
+                }
+            }, 8000);
+        }
+
+        // ============================================
+        // TEXT SELECTION PRACTICE
+        // ============================================
+
+        const selectableWords = [
+            'computer', 'keyboard', 'monitor', 'internet', 'browser',
+            'document', 'folder', 'desktop', 'window', 'button',
+            'email', 'website', 'password', 'username', 'download',
+            'program', 'application', 'software', 'hardware', 'mouse',
+            'printer', 'scanner', 'network', 'wireless', 'digital'
+        ];
+
+        let currentTargetWord = '';
+        let selectionCheckHandler = null;
+
+        function createTextSelectExercise() {
+            // Don't create if session complete or paused
+            if (state.completed >= state.sessionGoal || state.isPaused || !state.isStarted) return;
+            
+            clearTargets();
+            
+            // Remove any existing handler
+            if (selectionCheckHandler) {
+                document.removeEventListener('mouseup', selectionCheckHandler);
+            }
+            
+            currentTargetWord = selectableWords[Math.floor(Math.random() * selectableWords.length)];
+            
+            const container = document.createElement('div');
+            container.className = 'text-select-container';
+            
+            // Create sentence with target word
+            const sentences = [
+                `Please select the word <span class="target-word" id="targetWord">${currentTargetWord}</span> by clicking and dragging.`,
+                `Use your mouse to highlight <span class="target-word" id="targetWord">${currentTargetWord}</span> in this sentence.`,
+                `Click at the start of <span class="target-word" id="targetWord">${currentTargetWord}</span> and drag to select it.`,
+                `Practice selecting: <span class="target-word" id="targetWord">${currentTargetWord}</span> — click, hold, and drag!`
+            ];
+            
+            container.innerHTML = `
+                <h3>Select the highlighted word:</h3>
+                <div class="selectable-text">${sentences[Math.floor(Math.random() * sentences.length)]}</div>
+                <p class="select-hint">💡 Click at the start of the word, hold the button, drag to the end, then release</p>
+            `;
+            
+            elements.practiceArea.appendChild(container);
+            state.activeTargets.push(container);
+            
+            // Create and store the handler
+            selectionCheckHandler = function(e) {
+                // Small delay to let selection complete
+                setTimeout(() => {
+                    const selection = window.getSelection();
+                    const selectedText = selection.toString().trim().toLowerCase();
+                    
+                    if (selectedText.length === 0) return;
+                    
+                    state.attempts++;
+                    state.skillStats['select'].attempts++;
+                    
+                    if (selectedText === currentTargetWord.toLowerCase()) {
+                        const targetWordEl = document.getElementById('targetWord');
+                        if (targetWordEl) targetWordEl.classList.add('selected');
+                        handleSuccess();
+                        document.removeEventListener('mouseup', selectionCheckHandler);
+                        setTimeout(createTextSelectExercise, 800);
+                    } else {
+                        showFeedback('Select just: ' + currentTargetWord, 'error');
+                        selection.removeAllRanges();
+                    }
+                }, 50);
+            };
+            
+            document.addEventListener('mouseup', selectionCheckHandler);
+        }
+
+        // ============================================
+        // SKILL SWITCHING
+        // ============================================
+
+        function clearTargets() {
+            clearTimeout(state.targetTimeout);
+            state.targetTimeout = null;
+            state.activeTargets.forEach(t => t.remove());
+            state.activeTargets = [];
+            elements.practiceArea.classList.remove('drag-mode');
+            
+            // Reset drag state
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', endDrag);
+            state.isDragging = false;
+            state.dragElement = null;
+            
+            // Clear any hover intervals
+            if (state.hoverTimer) {
+                clearInterval(state.hoverTimer);
+                state.hoverTimer = null;
+            }
+            
+            // Clear text selection and handler
+            if (selectionCheckHandler) {
+                document.removeEventListener('mouseup', selectionCheckHandler);
+                selectionCheckHandler = null;
+            }
+            window.getSelection().removeAllRanges();
+        }
+
+        function switchSkill(skill) {
+            state.currentSkill = skill;
+            
+            // Update tabs
+            elements.skillTabs.forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.skill === skill);
+            });
+            
+            // Update instructions
+            elements.instructions.innerHTML = instructions[skill];
+            
+            // Clear any existing targets
+            clearTargets();
+            
+            // If completion screen was showing, reset the session
+            if (!elements.completionScreen.classList.contains('hidden')) {
+                restartSession();
+                return;
+            }
+            
+            // Show start screen if not started
+            if (!state.isStarted) {
+                elements.startScreen.classList.remove('hidden');
+                elements.pauseBtn.disabled = true;
+                return;
+            }
+            
+            // Don't start new exercise if paused
+            if (state.isPaused) {
+                return;
+            }
+            
+            // Start appropriate exercise
+            startCurrentExercise();
+            
+            updateStats();
+        }
+
+        function startCurrentExercise() {
+            switch (state.currentSkill) {
+                case 'click':
+                    createClickTarget();
+                    break;
+                case 'double-click':
+                    createDoubleClickTarget();
+                    break;
+                case 'right-click':
+                    createRightClickTarget();
+                    break;
+                case 'hover':
+                    createHoverTarget();
+                    break;
+                case 'drag':
+                    createDragExercise();
+                    break;
+                case 'select':
+                    createTextSelectExercise();
+                    break;
+                case 'scroll':
+                    createScrollExercise();
+                    break;
+            }
+        }
+
+        function startExercise() {
+            state.isStarted = true;
+            state.isPaused = false;
+            elements.startScreen.classList.add('hidden');
+            elements.completionScreen.classList.add('hidden');
+            elements.pauseBtn.disabled = false;
+            elements.feedbackBar.textContent = 'Go!';
+            elements.feedbackBar.className = 'feedback-bar success';
+            
+            startCurrentExercise();
+            updateStats();
+        }
+
+        function pauseExercise() {
+            if (!state.isStarted || state.isPaused) return;
+            
+            state.isPaused = true;
+            clearTargets();
+            elements.pauseOverlay.classList.remove('hidden');
+            elements.pauseBtn.disabled = true;
+            elements.feedbackBar.textContent = 'Paused - take your time!';
+            elements.feedbackBar.className = 'feedback-bar';
+        }
+
+        function resumeExercise() {
+            if (!state.isPaused) return;
+            
+            state.isPaused = false;
+            elements.pauseOverlay.classList.add('hidden');
+            elements.pauseBtn.disabled = false;
+            elements.feedbackBar.textContent = 'Keep going!';
+            elements.feedbackBar.className = 'feedback-bar success';
+            
+            startCurrentExercise();
+        }
+
+        function resetExercise() {
+            // If completion screen was showing, do a full restart
+            if (!elements.completionScreen.classList.contains('hidden')) {
+                restartSession();
+                return;
+            }
+            
+            state.streak = 0;
+            state.consecutiveMisses = 0;
+            state.isStarted = false;
+            state.isPaused = false;
+            clearTargets();
+            elements.startScreen.classList.remove('hidden');
+            elements.pauseOverlay.classList.add('hidden');
+            elements.completionScreen.classList.add('hidden');
+            elements.pauseBtn.disabled = true;
+            elements.feedbackBar.textContent = 'Ready to practice!';
+            elements.feedbackBar.className = 'feedback-bar';
+            updateStats();
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+
+        // Prevent context menu on practice area (except for right-click targets)
+        elements.practiceArea.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Skill tab clicks
+        elements.skillTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                switchSkill(tab.dataset.skill);
+            });
+        });
+
+        // Reset button
+        elements.resetBtn.addEventListener('click', resetExercise);
+
+        // Start button
+        elements.startExerciseBtn.addEventListener('click', startExercise);
+
+        // Pause button
+        elements.pauseBtn.addEventListener('click', pauseExercise);
+
+        // Resume button
+        elements.resumeBtn.addEventListener('click', resumeExercise);
+
+        // Restart button (after completion)
+        elements.restartBtn.addEventListener('click', restartSession);
+
+        // Miss on clicking empty space (for click exercises)
+        elements.practiceArea.addEventListener('click', (e) => {
+            if (e.target === elements.practiceArea && 
+                (state.currentSkill === 'click' || state.currentSkill === 'double-click')) {
+                state.attempts++;
+                state.skillStats[state.currentSkill].attempts++;
+                handleMiss();
+            }
+        });
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        // Set initial state - don't auto-start
+        elements.instructions.innerHTML = instructions['click'];
+        elements.progressGoal.textContent = state.sessionGoal;
+        updateStats();
+    </script>
+</body>
+</html>
